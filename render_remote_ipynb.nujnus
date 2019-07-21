@@ -1,0 +1,38 @@
+ssh:./
+```meta
+eval "$(pyenv init -)"
+pyenv shell anaconda3-5.2.0
+pyenv versions
+```
+```python
+import json
+import os
+
+#with open("/tmp/template_cache.nbconvert.ipynb", 'r') as load_f:
+#  load_dict = json.load(load_f)
+#  first_cell_with_output = load_dict["cells"][0]
+
+with open("/tmp/emacs_argument.json", 'r') as arg_f:
+#read argument
+
+  arg_dict = json.load(arg_f)
+  prefix_filename = arg_dict["target_ipynb"]
+  source = arg_dict["source"]
+  metadata = arg_dict["metadata"]
+
+  target_path = "/opt/pydev/"+ prefix_filename + ".ipynb"
+
+#read  target_path to json to append source
+  with open(target_path, 'r') as read_dump_f:
+    print(target_path)
+    target_dict = json.load(read_dump_f)
+    target_dict["cells"].append(source)
+    target_dict["metadata"] = metadata
+
+#write json  to target_path 
+    with open(target_path, 'w') as dump_f:
+      json.dump(target_dict, dump_f)
+
+os.system("jupyter nbconvert --allow-errors --output /opt/pydev/"+prefix_filename +" --to notebook --execute "+target_path)
+
+```

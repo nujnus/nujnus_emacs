@@ -1,0 +1,43 @@
+ipython:./
+```python
+import pandas as pd
+import copy
+
+#被记录的执行步骤的序号
+dbg_acc = 0
+dvs = {}
+
+#生成一个用来展示的dataframe
+print_data = {}
+p = pd.DataFrame(print_data)
+p
+
+#list(dvs.keys)
+def log_dbg_var(name, var):
+  #构造一个属性记录
+  if name in dvs.keys():
+    dvs[name].append(copy.deepcopy(var))
+  else:
+    dvs[name] = [copy.deepcopy(var)]
+
+  global dbg_acc
+
+  #构造一个等待打印的结构.
+  p.at[dbg_acc, name] = "dvs[\""+name+"\"]["+str(len(dvs[name])-1)+"]"
+  dbg_acc = dbg_acc + 1
+  return dbg_acc
+
+
+def print_dvs():
+  p.fillna( "", inplace = True)
+  p_table_data = p.values.tolist()
+  p_table_data.insert(0, list(p.keys()))
+  from terminaltables import AsciiTable
+  ptable = AsciiTable(p_table_data)
+  ptable.inner_row_border = True 
+  #ptable.inner_row_border = False 
+  ptable.inner_column_border = False
+  ptable.outer_border = False
+  print(ptable.table)
+
+```

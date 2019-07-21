@@ -1,0 +1,1121 @@
+;(set-fontset-font "fontset-default" 'iso-8859-3 "Liberation Mono")
+
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+(package-initialize)
+
+(require 'evil)
+(evil-mode 1)
+
+(setq make-backup-files nil)
+
+
+
+(add-to-list 'load-path "/Users/sunjun/.emacs.d/from_github/iedit")
+(require 'iedit)
+(add-to-list 'load-path "/Users/sunjun/.emacs.d/from_github/evil-multiedit")
+(require 'evil-multiedit)
+(add-to-list 'load-path "/Users/sunjun/.emacs.d/from_github/dash.el")
+(require 'dash)
+(add-to-list 'load-path "/Users/sunjun/.emacs.d/from_github/s.el")
+(require 's)
+
+
+(define-key evil-visual-state-map "R" 'evil-multiedit-match-all)
+
+
+;(define-key evil-normal-state-map "`" '(lambda ()(interactive)(message "lsdajflkljsdf"))
+;(evil-ex-define-cmd "i[term]"     '(lambda ()(interactive)(message "new iterm")))
+(evil-ex-define-cmd "p[ackage]"     'package-install)
+
+(require 'key-chord)
+(key-chord-mode 1)
+;(key-chord-define evil-insert-state-map "tt" 'evil-normal-state)
+
+
+(require 'guide-key)
+(setq guide-key/guide-key-sequence '("C-x r" "C-x 4"))
+(guide-key-mode 1)  ; Enable guide-key-mode
+
+
+(require 'back-button)
+(back-button-mode 1)
+
+
+;(setq markdown-command "/usr/local/bin/markdown")
+;(setq markdown-command "/usr/local/bin/pandoc --filter pandoc-mermaid")
+;(setq markdown-command "vim -c \"source ~/.emacs.d/vimscript\"")
+;(setq markdown-command "/usr/local/bin/rst2html.py")
+
+(evil-ex-define-cmd "md"   'nujnus-markdown)
+(defun nujnus-markdown ()
+  (interactive)
+  (call-process-shell-command (format "vim -c \"source ~/.emacs.d/vimscript\" %s" buffer-file-name) nil 0)
+)
+
+(setq markdown-command "/usr/local/bin/pandoc")
+(evil-ex-define-cmd "l[atex]"   'markdown-preview)
+
+
+
+(require 'popup)
+
+(global-linum-mode t)
+
+(require 'centered-cursor-mode)
+(centered-cursor-mode 0)  ;这个启动会导致 evil的ctrl-y ctrl-e失效
+(define-key evil-normal-state-map "\C-u" '(lambda ()(interactive)(ccm-scroll-down 10)))
+(define-key evil-normal-state-map "\C-d" '(lambda ()(interactive)(ccm-scroll-up 10)))
+
+
+
+;https://langui.sh/2010/11/14/pbpaste-pbcopy-in-mac-os-x-or-terminal-clipboard-fun/
+;pbcopy
+;This command allows you to copy text from stdin into the clipboard1 buffer. Trivial example:
+;
+;echo 'Hello World!' | pbcopy
+;“Hello World!” is now in your clipboard.
+;
+;pbpaste
+;Pastes from your clipboard to stdout. Trivial example:
+;
+;echo `pbpaste`
+
+(defun copy-from-osx ()
+  (shell-command-to-string "pbpaste"))
+
+(defun paste-to-osx (text &optional push)
+  (let ((process-connection-type nil))
+    (let ((proc (start-process "pbcopy" "*Messages*" "pbcopy")))
+      (process-send-string proc text)
+      (process-send-eof proc))))
+
+(setq interprogram-cut-function 'paste-to-osx)
+(setq interprogram-paste-function 'copy-from-osx)
+
+
+;其他版本的copy paste, 仅供参考.
+;(progn
+;;;;###autoload
+;(defun evil-osx-clipboard/copy (start end)
+;  "copy to the system clipboard"
+;  (interactive "r")
+;  (shell-command-on-region start end "pbcopy")
+;  )
+;
+;
+;;;;###autoload
+
+(define-key evil-normal-state-map "P" 'evil-osx-clipboard/paste)
+(defun evil-osx-clipboard/paste ()
+  "paste from the system clipboard"
+  (interactive)
+  (message  (number-to-string (length (thing-at-point 'line))))
+  (if (eq (length (thing-at-point 'line)) 1)
+    (insert (replace-regexp-in-string "\n$" ""(shell-command-to-string "pbpaste")))
+    (progn
+      (evil-open-below 1)
+      (insert  (replace-regexp-in-string "\n$" "" (shell-command-to-string "pbpaste")))
+      (evil-normal-state 1))
+  )
+)
+;
+;;;;###autoload
+;(defun evil-osx-clipboard/set-osx-defaults ()
+;  "set control-shift-c/v as copy and paste from system clipboard"
+;  (interactive)
+;	(define-key evil-normal-state-map (kbd "s-c") 'evil-osx-clipboard/copy)
+;	(define-key evil-visual-state-map (kbd "s-c") 'evil-osx-clipboard/copy)
+;	(define-key evil-insert-state-map (kbd "s-v") 'evil-osx-clipboard/paste)
+;	(global-set-key (kbd "s-c") 'evil-osx-clipboard/copy)
+;	(global-set-key (kbd "s-v") 'evil-osx-clipboard/paste)
+;)
+;)
+
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (jedi-direx pos-tip jedi fancy-narrow ht iedit evil-multiedit multiple-cursors easy-jekyll markdown-mode+ restclient request centered-cursor-mode dired-rainbow dired-icon direx dired-k projectile popup key-chord guide-key evil dired-hacks-utils back-button))))
+ ;markdown-preview-mode 
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+
+(progn
+  (defun delete-frame-or-kill-emacs (the-frame)
+    "Delete the selected frame.  If the last one, kill Emacs."
+    (interactive)
+    (condition-case nil (delete-frame the-frame) (error (progn (save-buffer (current-buffer))(kill-emacs)))))
+
+  ;因为emacs --daemon模式可能给一个buffer打开多次window, 当只有一个window时直接退出buffer
+  (evil-ex-define-cmd "q" 'nujnus/quit)
+  (defun nujnus/quit ()
+     (interactive)
+     (let (
+       (length-of-buffer-window (length (get-buffer-window-list (buffer-name) nil t)))
+       (bufferfilename  (buffer-file-name(current-buffer)))
+       (buffername  (buffer-name(current-buffer)))
+
+     )
+     (if (eq (length (window-list)) 1)
+       (delete-frame-or-kill-emacs (selected-frame))
+       (delete-window (selected-window)))
+     (unless (-contains? '("*scratch*" "*Messages*" "minibuffer" "test-buffer" "test-buffer-tmp") buffername )
+       (progn
+         (if bufferfilename ;如果是file,就kill-buffer
+           (if (eq length-of-buffer-window 1)  ;nil意味着不考虑minibuffer  t意味着在所有已经打开的frame中找
+             (kill-buffer buffername))))
+       )))
+
+
+  (evil-ex-define-cmd "wq"  'nujnus/save-and-quit)
+  (defun nujnus/save-and-quit ()
+     (interactive)
+     (let (
+       (length-of-buffer-window (length (get-buffer-window-list (buffer-name) nil t)))
+       (bufferfilename  (buffer-file-name(current-buffer)))
+       (buffername  (buffer-name(current-buffer)))
+
+     )
+     (if (eq (length (window-list)) 1)
+       (delete-frame-or-kill-emacs (selected-frame))
+       (delete-window (selected-window)))
+     (unless (-contains? '("*scratch*" "*Messages*" "minibuffer") buffername )
+       (progn
+         (if bufferfilename ;如果是file,就kill-buffer
+           (if (eq length-of-buffer-window 1)  ;nil意味着不考虑minibuffer  t意味着在所有已经打开的frame中找
+             (progn
+               (save-buffer buffername)
+               (kill-buffer buffername))
+             (save-buffer buffername)
+	     ))))))
+)
+
+;--------------
+;org-mode
+;测试一下, 
+;with-the-buffer-specified-by-the-link, 应该不再仅仅是用与org
+
+(progn
+
+
+  (defvar where-driver-script-is "/Users/sunjun/Desktop/dotemacs")
+  (setq cmd-to-open-in-emacsclient-in-new-shell     (format "osascript %s/emacs.scpt"  where-driver-script-is))
+  ;(setq open-in-emacsclient-in-new-shell-cmd  (concat cmd-to-open-in-emacsclient-in-new-shell "  %s"))
+
+  ;my-shell-driver-open.el
+  (defun open-in-emacsclient-in-new-shell (path)
+    "在新termianl窗口中访问path"
+
+;需要判断一下path
+    (call-process-shell-command (concat cmd-to-open-in-emacsclient-in-new-shell " " path) nil 0))
+
+
+
+  (defmacro with-the-buffer-specified-by-the-link (link before-start-edit how-to-open)
+    `(progn
+       (let (
+         (buffer-lnumber-pair  (split-string ,link  "::")))   ;以::为界分割path
+         (let (
+           (path  (if (string-match "^/.+" (car buffer-lnumber-pair))
+                    (car buffer-lnumber-pair)
+                    (concat default-directory (car buffer-lnumber-pair))))  ;第一个参数为file或buffer
+           (lnumber-or-search    (cadr buffer-lnumber-pair))) ;第二个参数为行号或者要搜索的内容
+           (progn
+             (shell-command-to-string (format "touch %s" path));
+             (with-current-buffer (find-file-noselect path)  ;;find-file-noselect不会覆盖当前窗口, 就是说只是打开一个buffer
+               (if lnumber-or-search                                   ;如果lnumber-or-search存在
+                 (if (eq (string-to-number lnumber-or-search) 0)       ;如果有::后的参数是0, 说明是文字
+                   (jump-to-word (concat  "<<" lnumber-or-search ">>")) ;跳转到对应的词汇上
+                   (evil-goto-line (string-to-number lnumber-or-search)))) ;否则说明是行号, 就跳到行号上
+               ,before-start-edit)                 ;跳转过去后, 做一些操作
+             (,how-to-open  path))))))   ;选择显示这个buffer的方式, 例如open-in-emacsclient-in-new-shell,  就开始把信息传递给open-in-emacsclient-in-new-shell了
+
+  ;新iterm窗口中打开文件
+  (add-hook 'org-mode-hook
+    '(lambda() (interactive)
+      (org-add-link-type "emacs" 'open-file-in-new-shell)))
+
+  (defun open-file-in-new-shell (link)
+     (with-the-buffer-specified-by-the-link link  (message "new terminal") open-in-emacsclient-in-new-shell))
+
+)
+
+
+(progn
+  ;新iterm窗口中打开shell并运行命令
+  (setq script-to-run-in-new-shell-template "/tmp/invoke_by_shell_scpt%s")
+
+
+  (setq emacs-open-shell-with-new-ssh-client-script     (format "osascript %s/shell-pc-jht-500g.scpt "  where-driver-script-is))
+  (setq run-script-in-new-ssh-cmd (concat emacs-open-shell-with-new-ssh-client-script "  %s"))
+
+  (defmacro run-script-in-new-ssh-and-do (&rest code)
+    `(progn
+       (let (
+         (script-to-run-in-new-shell (format script-to-run-in-new-shell-template (format-time-string "%Y-%m-%d-%H-%M-%S"))))
+	 (let (
+           (script-to-run-in-new-ssh (format "\'bash %s\'" script-to-run-in-new-shell )))
+	 ;(message script-to-run-in-new-shell)
+;)))
+           (with-current-buffer  (find-file  script-to-run-in-new-shell)
+             ,@code)
+           (message (shell-command-to-string (format "scp %s root@192.168.3.57:/tmp/ " script-to-run-in-new-shell)))
+           (call-process-shell-command (format  run-script-in-new-ssh-cmd script-to-run-in-new-ssh) nil 0)))))
+
+  (setq emacs-open-shell-with-new-client-script     (format "osascript %s/shell.scpt "  where-driver-script-is))
+  (setq run-script-in-new-shell-cmd (concat emacs-open-shell-with-new-client-script "  %s"))
+
+  ;感觉可以提炼一下,做为驱动来说,这个实现太细节了.
+  (defun run-script-in-new-shell (cmd)
+    "感觉是,构建一个较长的shell文件,然后在新terminal中运行"
+    (let ((script-to-run-in-new-shell (format script-to-run-in-new-shell-template (format-time-string "%Y-%m-%d-%H-%M-%S"))))
+      (with-current-buffer  (find-file  script-to-run-in-new-shell)
+        (erase-buffer)
+        (insert cmd)
+        ;(insert ";cat")  ;我记得增加这条是有原因的, 具体为啥忘记了.
+        ;(insert ";exit\n")
+        (save-buffer)
+        (kill-buffer))
+      (call-process-shell-command (concat "chmod +x " script-to-run-in-new-shell) nil 0 )
+      (call-process-shell-command (format  run-script-in-new-shell-cmd script-to-run-in-new-shell) nil 0)))
+
+  (defmacro run-script-in-new-shell-and-do (&rest code)
+    `(progn
+       (let ((script-to-run-in-new-shell (format script-to-run-in-new-shell-template (format-time-string "%Y-%m-%d-%H-%M-%S"))))
+         (with-current-buffer  (find-file  script-to-run-in-new-shell)
+           ,@code)
+         (call-process-shell-command (concat "chmod +x " script-to-run-in-new-shell) nil 0 )
+         (call-process-shell-command (format  run-script-in-new-shell-cmd script-to-run-in-new-shell) nil 0))))
+
+
+  (add-hook 'org-mode-hook
+    '(lambda() (interactive)
+        (org-add-link-type "sh"   'run-script-in-new-shell)))      ;打开一个新的terminal来运行程序
+)
+
+
+(progn
+;google请求, 其他的可以由此生长.
+
+  (setq nujnus/google-search-cmd  "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome  'http://google.com/search?hl=en&safe=off&q=%s'")
+  (defun nujnus/google-search (to-search)
+    "用google搜索to-search"
+    (call-process-shell-command
+      (format nujnus/google-search-cmd
+        to-search) nil 0 ))
+    (add-hook 'org-mode-hook
+      '(lambda() (interactive)
+          (org-add-link-type "google" 'nujnus/google-search)))
+)
+
+(progn
+;打开外部shell并运行当下的嵌入型脚本
+
+  ;(setq cmd-template-to-run-the-script "/Users/sunjun/Desktop/my_emacs_config/and_xml_evaluator.rb xserver %s  %s")
+  (setq cmd-template-to-run-the-script "/Users/sunjun/Desktop/dotemacs/nujnus_emacs_script/xscript.rb get_cmd_to_run_the_script  %s  %s")
+  (setq cmd-template-to-run-before-all-others "/Users/sunjun/Desktop/dotemacs/nujnus_emacs_script/xscript.rb get_cmd_to_run_before_all_others  %s  %s")
+  (setq cmd-template-to-run-after-all-others "/Users/sunjun/Desktop/dotemacs/nujnus_emacs_script/xscript.rb get_cmd_to_run_after_all_others  %s  %s")
+
+
+  ;(setq cmd-template-to-run-before-all-others "/Users/sunjun/Desktop/my_emacs_config/and_xml_evaluator.rb meta %s  %s")
+
+  (add-hook 'org-mode-hook
+    '(lambda() (interactive)
+      (org-add-link-type "xscript"    'xscript)    ;与emacs异步执行的progn,并生成history link tag,点击可以进入对应history文件.
+  ))
+
+  (defun xscript(path)
+    (let (
+        (backup-default-directory default-directory)
+        (cmd-to-run-before-all-others
+	   (shell-command-to-string (format cmd-template-to-run-before-all-others (buffer-file-name)(number-to-string(point)))))
+        (cmd-to-run-after-all-others
+	   (shell-command-to-string (format cmd-template-to-run-after-all-others (buffer-file-name)(number-to-string(point)))))
+        (cmd-to-run-the-script
+	   (shell-command-to-string
+	     (format cmd-template-to-run-the-script (buffer-file-name)(number-to-string(point)))))
+      )
+      (cd path)  ;切换到到目标path
+
+      ;(setq script-for-osx-to-invoke (format "/tmp/script-for-osx-to-invoke%s" (number-to-string (time-to-seconds))))
+      ;(shell-command-to-string (format "touch %s" script-for-osx-to-invoke))
+      (run-script-in-new-shell-and-do
+        (erase-buffer)                       
+        (insert cmd-to-run-before-all-others)
+        (save-buffer)                        
+        (insert cmd-to-run-the-script)       
+        (save-buffer)                        
+        (insert cmd-to-run-after-all-others)
+        (save-buffer)                        
+        (kill-buffer))                       
+      (cd backup-default-directory)) ;cd回默认目录
+  )
+
+  ;还要想办法把代码scp过去.
+  (defun sshxscript(path)
+    (let (
+        (backup-default-directory default-directory)
+        (cmd-to-run-before-all-others
+	   (shell-command-to-string (format cmd-template-to-run-before-all-others (buffer-file-name)(number-to-string(point)))))
+        (cmd-to-run-after-all-others
+	   (shell-command-to-string (format cmd-template-to-run-after-all-others (buffer-file-name)(number-to-string(point)))))
+        (cmd-to-run-the-script
+	   (shell-command-to-string
+	     (format cmd-template-to-run-the-script (buffer-file-name)(number-to-string(point)))))
+      )
+      (cd path)  ;切换到到目标path
+
+      ;临时顶一顶
+      ;(insert cmd-to-run-the-script)
+      ;(insert (car (cdr (split-string  cmd-to-run-the-script " "))))
+      (message (shell-command-to-string
+        (format "scp %s root@192.168.3.57:/tmp/ " (replace-regexp-in-string "\n$" ""(car (cdr (split-string  cmd-to-run-the-script " ")))))))
+
+      (run-script-in-new-ssh-and-do
+        (erase-buffer)                       
+        (insert cmd-to-run-before-all-others)
+        (save-buffer)                        
+        (insert cmd-to-run-the-script)       
+        (save-buffer)                        
+        (insert cmd-to-run-after-all-others)
+        (save-buffer)                        
+        (kill-buffer))                       
+      (cd backup-default-directory)) ;cd回默认目录
+  )
+
+)
+
+;(evil-visual-mark-mode 1)
+
+;------------------------------------------------------------------------------------
+;以后就用下面这个代替org-link
+(progn
+
+;临时禁止发布message
+(defmacro with-suppressed-message (&rest body)
+  "Suppress new messages temporarily in the echo area and the `*Messages*' buffer while BODY is evaluated."
+  (declare (indent 0))
+  (let ((message-log-max nil))
+    `(with-temp-message (or (current-message) "") ,@body)))
+
+;(with-suppressed-message (save-buffer))
+
+
+(defun thing-at-regexp ()
+  "看光标下是否有符合的regexp"
+  (with-suppressed-message (save-buffer))  ;临时禁止发布message
+  (replace-regexp-in-string "\n$" ""
+    (shell-command-to-string  ;删除python print添加的行尾回车
+      (format "python ~/Desktop/dotemacs/thing_at_regexp.py %s %s %s"
+        (buffer-file-name)  ;文件名
+        ;(- (string-to-number (format-mode-line "%l")) 1) ;这个有个bug就是通过format-mode-line去获得行号的话,如果要获得另一个没选中的buffer的行号的话,format-mode-line还是指向当前选中的buffer
+        (number-to-string(- (count-lines 1 (+ (point) 1)) 1)) ;返回当前行号
+	  ;这里给point加1的原因是, count-lines有个问题, point落在行首时会被算到上一行去.
+        (current-column))))) ;第几列
+
+
+(add-to-list 'load-path "/Users/sunjun/.emacs.d/from_github/ht.el")
+(require 'ht)
+
+(setq nujnus/link-type-hash (ht-create))
+
+(defun nujnus/add-link-type (link func)
+  (ht-set! nujnus/link-type-hash link func)
+)
+(defun nujnus/contains-link? (link)
+  (ht-contains?  nujnus/link-type-hash link)
+)
+
+(defun nujnus/get-link-func (link)
+    (ht-get nujnus/link-type-hash link)
+)
+
+(define-key evil-normal-state-map (kbd "C-c C-o") 'nujnus/run-link)
+;(define-key evil-normal-state-map (kbd "C-c C-m")  'markdown-follow-thing-at-point)
+
+(defun nujnus/run-link ()
+  (interactive)
+  (let (
+    (match (thing-at-regexp)))
+    (let (
+      (result-pair  (split-string match ":")))
+      (let (
+        (tag       (car result-pair))
+        (content   (cadr result-pair)))
+        (if (nujnus/contains-link? tag)
+	  (progn
+            (funcall (nujnus/get-link-func tag) content)  (message content))
+	  (progn
+            (markdown-follow-thing-at-point (point))
+            (message (format "there is no link-tag called %s " tag));如果没有预先定义tag, 就报该错误
+	  )))))
+;还需要增加一个高亮吗? 就把tag高亮就好了吧, tag: 这种, 作为最优先高亮的.
+)
+
+
+(nujnus/add-link-type "emacs" 'open-file-in-new-shell)
+(nujnus/add-link-type "google" 'nujnus/google-search)
+(nujnus/add-link-type "sh" 'run-script-in-new-shell)
+(nujnus/add-link-type "xscript" 'xscript)
+(nujnus/add-link-type "ssh" 'sshxscript)
+
+
+(nujnus/add-link-type "visdom" 'nujnus/http)
+
+ (setq nujnus/http-cmd  "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome  '%s'")
+ (defun nujnus/http (to-search)
+   (call-process-shell-command (format nujnus/http-cmd "http://test.ununlab.com:9989/") nil 0 ))
+
+)
+;google:adfad
+;emacs:somefile.md
+;sh:ls
+;(list-buffers)	
+;(kill-buffer "somefile.md")
+;2    somefile.md<nujnus...     0 Markdown         ~/Desktop/dotemacs/nujnus_emacs_script/somefile.md
+;5    somefile.md<sunjun>       0 Markdown         ~/somefile.md
+
+;python脚本以后还可以做各种扩展.
+;例如处理各种特殊thing-at-xxx.
+
+;------------------------------------------------------------------------------------------
+(progn
+(setq touch-notebook-cmd  "sh  /Users/sunjun/Desktop/dotemacs/touch_ipynb.sh %s")
+(setq open-notebook-cmd  "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome  'http://test.ununlab.com:9999/notebooks/%s.ipynb'")
+(nujnus/add-link-type "nb" 'open-notebook)
+(defun open-notebook (bookname)
+  "用google搜索to-search"
+  (shell-command-to-string (format touch-notebook-cmd bookname))
+  (call-process-shell-command
+    (format open-notebook-cmd
+      bookname) nil 0 ))
+
+;nb:albumentation
+
+
+;------------------------------------------------------------------------------------------
+;nujnus/run-link的进化, 把我的"标签代码"提炼成了.nujnus脚本. 可以像解释器一样去调用.nujnus脚本了.
+
+(defun run-nujnus-script(path)
+  (with-current-buffer (find-file-noselect path)
+    (goto-char 0) ;已修复bug
+    (nujnus/run-link)
+  )
+)
+
+;(run-nujnus-script "/Users/sunjun/Desktop/my_emacs_config/tst.nujnus")
+;emacs:/Users/sunjun/Desktop/my_emacs_config/tst.nujnus
+
+
+;ssh root@192.168.3.57 'ls /opt/pydev'|grep .ipy
+
+(evil-ex-define-cmd "n[d]"  'md-to-notebook)
+(evil-define-command md-to-notebook(arg)
+  (interactive "<a>")
+  (let ((arg (or arg "nb")))
+  (save-buffer)
+  (let (
+   (preproccessed-file (replace-regexp-in-string "\n$" ""(shell-command-to-string (format "/Users/sunjun/Desktop/dotemacs/nujnus_emacs_script/xscript.rb  pre_strain_code_block_for_notebook  %s %s" (buffer-file-name) arg)))))
+  (shell-command-to-string (format "notedown  %s > /tmp/%s.ipynb" preproccessed-file (buffer-name)))
+  ;(insert (format "notedown  %s > /tmp/%s.ipynb" preproccessed-file (buffer-name)))
+
+  (call-process-shell-command (format "scp /tmp/%s.ipynb root@192.168.3.57:/opt/pydev/" (buffer-name)) nil 0)
+  (message "done")
+)))
+
+(evil-ex-define-cmd "py[thon]"  'edit-as-python-file)
+(evil-define-command edit-as-python-file(arg)
+  (interactive "<a>")
+  (let ((arg (or arg "python")))
+  (open-file-in-new-shell
+   (shell-command-to-string
+     (format  "/Users/sunjun/Desktop/dotemacs/nujnus_emacs_script/xscript.rb get_cmd_to_run_the_script_combined_all_block %s"
+       (replace-regexp-in-string "\n$" ""
+         (shell-command-to-string
+           (format "/Users/sunjun/Desktop/dotemacs/nujnus_emacs_script/xscript.rb  pre_strain_code_block_for_python  %s %s" (buffer-file-name) arg))))))))
+;pip install notedown
+
+(evil-ex-define-cmd "i"  'insert-code-block)
+(defun insert-code-block()
+  (interactive)
+  (insert (format "nbscript:%s\n"(buffer-name)))
+  (insert "\n")
+  (insert (format "nb:%s\n" (buffer-name)))
+  (insert "```nd-python\n")
+  (insert "```")
+)
+
+
+(evil-ex-define-cmd "n[b]"  'list-notebook)
+(defun list-notebook()
+  (interactive)
+  (pop-window 50 "/tmp/test-buffer"
+    (insert (shell-command-to-string 
+    "ssh root@192.168.3.57 'ls /opt/pydev'|grep .ipynb|ruby -e '$stdin.readlines().each do |line| puts  \"nb:\"+line.chomp(\".ipynb\\n\") end'"
+    ))
+    (goto-char 1) 
+    (global-linum-mode t)
+  )
+)
+
+;nb:深度学习流程
+;nb:albumentation
+;nb:Untitled4
+;nb:fastai_dog_or_cat_learning
+;起名字的时候果然最好不要有空格
+
+
+
+
+(defmacro pop-window (size file  &rest code)
+  "给定一个particular-window,显示一个particular-buffer的内容k"
+  `(progn
+       (split-window-horizontally (- 150 ,size))
+       (other-window 1)
+       (with-current-buffer  (switch-to-buffer (find-file,file))
+        (erase-buffer)
+         ,@code))
+)
+)
+
+(defmacro pop-v-window (size file &rest code)
+  "给定一个particular-window,显示一个particular-buffer的内容k"
+  `(progn
+       (split-window-vertically (- 40 ,size))
+       (other-window 1)
+       (with-current-buffer  (switch-to-buffer (find-file,file))
+        (erase-buffer)
+         ,@code))
+)
+
+
+;------------------------------------------------------------------------------------
+(defun build-ipynb-at-point(arg)
+  (with-suppressed-message (save-buffer))  ;临时禁止发布message
+  (replace-regexp-in-string "\n$" ""
+    (message (shell-command-to-string  ;删除python print添加的行尾回车
+      (format "python ~/Desktop/dotemacs/build_ipynb_at_point.py %s %s %s"
+        (buffer-file-name)  ;文件名
+          (point) arg))))
+    ;传参
+    (shell-command-to-string  "scp /tmp/emacs_argument.json root@192.168.3.57:/tmp/emacs_argument.json")
+    ;(shell-command-to-string  "scp /tmp/template_cache.ipynb root@192.168.3.57:/tmp/template_cache.ipynb") ;直接使用目标ipynb
+    ;对目标ipynb存在性进行验证, 如果没有就创建.
+    (shell-command-to-string (format touch-notebook-cmd arg))
+    (run-nujnus-script "/Users/sunjun/Desktop/dotemacs/render_remote_ipynb.nujnus")
+)
+(nujnus/add-link-type "nbscript" 'build-ipynb-at-point)
+
+
+;------------------------------------------------------------------------------------
+(evil-ex-define-cmd "ssh" 'ssh-run-current-file-as-python)
+(defun  ssh-run-current-file-as-python()
+  (interactive)
+  ;先把当前buffer复制到远地
+  (let (
+    (command (format "python /tmp/%s \n"  (file-name-nondirectory (buffer-file-name)))))
+    (message (shell-command-to-string
+      (format "scp %s root@192.168.3.57:/tmp/ " (buffer-file-name) )))
+
+    (run-script-in-new-ssh-and-do
+      (erase-buffer)
+      (insert "eval \"$(pyenv init -)\"\n")
+      (insert "pyenv shell anaconda3-5.2.0\n")
+      (insert "pyenv versions\n")
+      (insert command)
+      (save-buffer)
+      (kill-buffer))
+))
+
+;------------------------------------------------------------------------------------------
+;创建新md文件并自动命名 和 列出当前目录markdown文件.
+(progn
+
+(evil-ex-define-cmd "ls" 'list-markdown)
+(defun list-markdown()
+  (interactive)
+  (let ((pwd default-directory))
+    (pop-window 90 "/tmp/test-buffer"
+      (insert (shell-command-to-string 
+        (format "find %s|grep .md|sort|ruby -e '$stdin.readlines().each do |line| puts  \"emacs:\"+line end'"  pwd)))
+      (goto-char 1)(global-linum-mode t)))
+)
+
+(evil-ex-define-cmd "new" 'touch-markdown-with-timestamp)
+(defun touch-markdown-with-timestamp ()
+  (interactive)
+  (let ((dir-name (get-directory-name-no-path)))
+    (let ((filepath (concat dir-name (format-time-string "%Y_%m_%d_%H_%M_%S") ".md")))
+     (open-file-in-new-shell filepath)
+     (insert (format "\nemacs:%s\n" filepath))
+)))
+
+(evil-ex-define-cmd "d[ate]" 'insert-timestamp)
+(defun insert-timestamp ()
+  (interactive)
+    (insert (format-time-string " <datetime: %Y-%m-%d %H:%M:%S> "))
+)
+
+
+(defun get-directory-name-no-path ()
+  (file-name-nondirectory
+    (directory-file-name
+       (file-name-directory (buffer-file-name)))))
+)
+
+
+
+;||;------------------------------------------------------------
+;和selected-frame绑定变量
+;||(modify-frame-parameters (selected-frame) '((qqq . 123)))
+;||(modify-frame-parameter (selected-frame) 'qqq  123)
+
+;||(frame-parameter (selected-frame) 'qqq)
+;||(frame-parameters (selected-frame))
+;||;------------------------------------------------------------
+;||
+;||(split-window (selected-window) 10 'left)
+;||(split-window (selected-window) 10 'right)
+;||(split-window (selected-window) 10 'below)
+;||(split-window (selected-window) 10 'above)
+
+
+;(pop-global-window 'below 10 "/tmp/test-buffer")
+;(pop-global-window 'below 10 "/tmp/EmacsTempFile_2019_06_17_16_43_08")
+;(pop-global-window 'above 10 "/tmp/EmacsTempFile_2019_06_17_16_43_08")
+;(symbolp 'below)
+;(frame-parameter (selected-frame) 'above)
+;(set-frame-parameter  (selected-frame) 'above nil)
+;(frame-parameters (selected-frame) )             
+;(find-function 'with-selected-window)
+;pop-below:/tmp/test-buffer
+;pop-above:/tmp/test-buffer
+
+
+(nujnus/add-link-type "pop-above" 'pop-global-above-and-back)
+(defun pop-global-above-and-back (file)
+  (pop-global-and-back 'above file)
+)
+
+(nujnus/add-link-type "pop-below" 'pop-global-below-and-back)
+(defun pop-global-below-and-back (file)
+  (pop-global-and-back 'below file)
+)
+
+(defun pop-global-and-back (direction file)
+  (if (eq (selected-window) (frame-parameter (selected-frame) 'current-window))
+    (progn
+      (pop-global-window direction 20 file)
+      (select-window (frame-parameter (selected-frame) 'current-window)))
+    (progn
+      (set-frame-parameter (selected-frame) 'current-window (selected-window))
+      (pop-global-window direction 20 file)
+      (select-window (frame-parameter (selected-frame) 'current-window)))
+))
+
+;(set-frame-parameter (selected-frame) 'above nil)
+;(pop-global-window 'above 10 "/tmp/test-buffer")
+;(window-valid-p (frame-parameter (selected-frame) 'above))
+(defmacro pop-global-window (direction size file &rest code)
+  `(if  (window-valid-p (frame-parameter (selected-frame) ,direction)) ;如果特定方向的 window已经存在, 切开启着
+       (with-selected-window (frame-parameter (selected-frame) ,direction) ;那就直接在对应窗口中进行操作
+         ;pop现在有个问题, 就是每次打开的buffer会越积累越多积累在那里, 但是暂时不影响使用, 就先这样吧.
+         (save-buffer (buffer-name))
+         (kill-buffer (buffer-name))
+	 (switch-to-buffer (find-file,file))
+        ,@code)
+    (progn
+      (my-split-main-window ,direction ,size)
+      (set-frame-parameter (selected-frame) ,direction (selected-window))
+      (with-selected-window (selected-window) (switch-to-buffer (find-file,file))
+        ,@code))
+         ))
+
+(defun my-split-main-window (direction size)
+  "Split the main window in the DIRECTION where DIRECTION is a symbol with
+possible values of right, left, above or below and SIZE is the final size of the
+windows, if the window is split horizontally (i.e. in DIRECTION below or above)
+SIZE is assumed to be the target height otherwise SIZE is assumed to be the
+target width"
+  (let* ((new-window (split-window (frame-root-window) nil direction))
+         (horizontal (member direction '(right left))))
+    (save-excursion 
+      (select-window new-window)
+      (enlarge-window
+        (- size
+	  (if horizontal (window-width) (window-height))) horizontal))
+        new-window))
+
+;----------------------------------------------------------------------------
+
+(evil-ex-define-cmd "t[mp]"  'list-tmp)
+(defun list-tmp()
+  (interactive)
+  (pop-window 60 "/tmp/test-buffer-tmp"
+    (cd "/tmp")
+    (erase-buffer)
+    (insert (shell-command-to-string 
+    "ls /tmp|grep EmacsTempFil|sort -r|ruby -e '$stdin.readlines().each do |line| puts  \"pop-below:\"+line.chomp(\".ipynb\\n\") end'"
+    ))
+    (insert (shell-command-to-string 
+    "ls /tmp|grep invoke_by_shell_scpt|sort -r|ruby -e '$stdin.readlines().each do |line| puts  \"pop-below:\"+line.chomp(\".ipynb\\n\") end'"
+    ))
+    (goto-char 1) 
+    (global-linum-mode t)
+  )
+)
+
+;----------------------------------------------------------------------------
+(evil-ex-define-cmd "v[is]"  'insert-visdom-code-block)
+(defun insert-visdom-code-block()
+  (interactive)
+  (insert "visdom:./\n")
+  (insert "xscript:./\n")
+  (insert "ipython:./\n")
+  (insert "```python\n")
+  (insert "#-*- coding:utf-8 -*-\n")
+  (insert "#!/usr/bin/env python\n")
+  (insert "import visdom\n")
+  (insert "import numpy as np\n")
+  (insert "cfg = {\"server\":\"test.ununlab.com\", \"port\":9989}\n")
+  (insert "viz = visdom.Visdom('http://' + cfg[\"server\"], port = cfg[\"port\"])\n")
+  (insert "```\n")
+)
+
+;----------------------------------------------------------------------------
+;code block jump
+
+(define-key evil-normal-state-map "c"  '(lambda ()(interactive)(search-forward "```")))
+(define-key evil-normal-state-map "C"  '(lambda ()(interactive)(search-backward "```")))
+
+;----------------------------------------------------------------------------
+;实时和ipython交互
+
+(evil-ex-define-cmd "int"  'interpret-python)
+(define-key evil-insert-state-map (kbd "C-x C-p") 'interpret-python)
+(define-key evil-normal-state-map (kbd "C-x C-p") 'interpret-python)
+(defun interpret-python()
+  (interactive)
+  (interpret-script  (thing-at-point 'line)))
+
+	
+(define-key evil-visual-state-map (kbd "C-x C-p") 'interpret-python-region)
+(defun interpret-python-region()
+  (interactive)
+  (interpret-script (buffer-substring-no-properties (- (region-beginning) 1) (region-end))))
+
+
+;(defun interpret-script(expression)
+;  (write-response (send-to-ipython expression))
+;)
+
+(setq send-to-ipython-cmd "sh ~/Desktop/dotemacs/curl_with_out_color.sh %s")
+(defun send-to-ipython(expression)
+  "把python以base64代码发送给ipython代理服务器"
+  (let ((target-string
+	(base64-encode-string
+          (replace-regexp-in-string "[^\x00-\xff]" "  " expression) 'utf-8)))
+                                  ;如果不替换这个正则, 就会报错:base64-encoding-region does not work on multibyte character
+                                  ;[^\x00-\xff]是所有双字节符号的意思, 不知道为什么要^, 但是似乎没有就不行.
+                                  ;中文是"[\u4e00-\u9fa5]"
+    (shell-command-to-string
+         ;(format  "sh ~/Desktop/dotemacs/curl_with_out_color.sh %s" send-to-ipython-cmd  target-string))))
+         (format  send-to-ipython-cmd  target-string))))
+
+(defun write-response(result)
+  "展示ipython的反馈"
+  (let
+    ((current-place (point)))
+    (save-excursion  ;要想insert after point 必须要save-excursion, 不然就会insert before
+      (end-of-line)
+      (newline))
+      (next-line)
+      (insert "#<output:>\n")
+      (insert 
+        (s-join "\n" 
+          (-map (lambda (str) (concat "#" str)) 
+		    (split-string result "\n"))))
+      (goto-char current-place)))
+
+;----------------------------------------------------------------------------------------------------
+;新的展示方式:
+;(defun interpret-script(expression)
+;  (write-response-other-window (send-to-ipython expression))
+;)
+
+(defun write-response-other-window(result)
+  (pop-global-right-and-back 65 "/tmp/emacs-ipython-temp"
+    (save-excursion  ;要想insert after point 必须要save-excursion, 不然就会insert before
+      (end-of-buffer)
+      (insert "\n---\n")
+      (insert-timestamp)
+      (insert "\n#<output:>\n")
+      (insert 
+        (s-join "\n" 
+          (-map (lambda (str) (concat "" str)) 
+		(split-string result "\n")))))
+      (end-of-buffer)
+    ))
+
+
+(defmacro pop-global-right-and-back (size file  &rest code)
+  `(if (eq (selected-window) (frame-parameter (selected-frame) 'current-window))
+    (progn
+      (pop-global-window 'right ,size ,file ,@code)
+      (select-window (frame-parameter (selected-frame) 'current-window)))
+    (progn
+      (set-frame-parameter (selected-frame) 'current-window (selected-window))
+      (pop-global-window 'right ,size ,file ,@code)
+      (select-window (frame-parameter (selected-frame) 'current-window)))
+))
+
+
+(defmacro pop-global-window (direction size file &rest code)
+  `(if  (window-valid-p (frame-parameter (selected-frame) ,direction)) ;如果特定方向的 window已经存在, 切开启着
+       (with-selected-window (frame-parameter (selected-frame) ,direction) ;那就直接在对应窗口中进行操作
+         ;pop现在有个问题, 就是每次打开的buffer会越积累越多积累在那里, 但是暂时不影响使用, 就先这样吧.
+         (save-buffer (buffer-name))
+         (kill-buffer (buffer-name))
+
+	 (switch-to-buffer (find-file,file))
+        ,@code
+	    (save-buffer)
+        )
+    (progn
+      (my-split-main-window ,direction ,size)
+      (set-frame-parameter (selected-frame) ,direction (selected-window))
+      (with-selected-window (selected-window) (switch-to-buffer (find-file,file))
+        ,@code
+	    (save-buffer)
+		))))
+
+;------------------------------------------------------------------------------------------------
+;通过package-install 安装jedi
+;jedi-20160426.456
+
+(define-key evil-normal-state-map "\C-n" 'ac-next)
+(define-key evil-insert-state-map "\C-n" 'ac-next)
+(define-key evil-normal-state-map "\C-p" 'ac-previous)
+(define-key evil-insert-state-map "\C-p" 'ac-previous)
+
+(setq ac-sources '())
+
+(evil-ex-define-cmd "h[elp]"  '(lambda()(interactive) (call-interactively  'jedi:show-doc)))
+(evil-ex-define-cmd "jedi"  '(lambda()(interactive) (call-interactively  'jedi:complete)))
+(evil-ex-define-cmd "jgo"  '(lambda()(interactive)(progn (evil-set-jump (point)) (call-interactively  'jedi:goto-definition))))
+(define-key evil-insert-state-map (kbd"\.") '(lambda()(interactive)(insert ".") (if (bound-and-true-p auto-complete-mode)(progn (message "jedi:complete")(call-interactively  'jedi:complete)))))
+
+(add-hook 'python-mode-hook 'sj/jedi-init-hook)
+(defun sj/jedi-init-hook() (interactive)
+    (auto-complete-mode 1)
+    (jedi:ac-setup)
+    ;技巧, 在目标环境中使用, M-x list-faces-display, 查看可能是目标颜色配置的face, 然后做下述修改:
+    (set-face-background 'ac-candidate-face "red")
+    (set-face-underline 'ac-candidate-face "red")
+    (set-face-background 'ac-selection-face "black")
+    (set-face-foreground 'ac-selection-face "red")
+    (set-face-background 'popup-summary-face "red")
+    (set-face-foreground 'popup-summary-face "black")
+)
+
+(autoload 'jedi:setup "jedi" nil t)
+(add-hook 'python-mode-hook 'jedi:setup)
+
+;----------------------------------------------------------------------------------------------------
+(nujnus/add-link-type "ipython" 'ipython-run-script)
+(defun ipython-run-script(link-arg)
+  (interpret-script
+    (format "exec(open('%s').read())" (get-ipython-script link-arg))
+  )
+)
+
+(defun get-ipython-script(link-arg)
+  (replace-regexp-in-string "\n$" ""(car (cdr (split-string  
+   (shell-command-to-string         ;应该就只是要这个, 等这个返回就好了.
+     (format cmd-template-to-run-the-script (buffer-file-name)(number-to-string(point))))
+   " "))))
+)
+
+(nujnus/add-link-type "ipython-r" 'ipython-run-script-remote)
+(defun ipython-run-script-remote(link-arg)
+  (let ((ipython-tmp-script (get-ipython-script link-arg)))
+    (shell-command-to-string
+      (format "scp %s root@192.168.3.57:/tmp/ " ipython-tmp-script)
+    )
+    (interpret-script
+      (format "exec(open('%s').read())" ipython-tmp-script)
+    )))
+
+;----------------------------------------------------------------------------------------------------
+;dbg工具: dbg命令和 log命令.
+(evil-ex-define-cmd "dbg" 'nujnus/dbg)
+(defun nujnus/dbg()
+  (interactive)
+  (run-nujnus-script "/Users/sunjun/Desktop/dotemacs/ipython_dbg_logger_init.nujnus")
+)
+(evil-ex-define-cmd "l[o]g" 'nujnus/log)
+(defun nujnus/log()
+  (interactive)
+  ;(run-nujnus-script "/Users/sunjun/Desktop/dotemacs/ipython_dbg_logger_init.nujnus")
+  (let ((word (thing-at-point 'symbol))
+        (line-number  (number-to-string(- (count-lines 1 (+ (point) 1)) 1))) ;返回当前行号
+        )
+    (evil-open-below 1)
+    (insert (format "log_dbg_var(\"%s#%s\", %s)\n"  word line-number word))  ;要改良成, 支持下划线和中划线的
+))
+;----------------------------------------------------------------------------------------------------
+;需求:
+;增加一个emacs命令, 在新窗口打开本buffer. (((为了向下一步的跨越)))
+
+(evil-ex-define-cmd "emacs" (lambda () (interactive)(open-file-in-new-shell (buffer-file-name))))
+
+;----------------------------------------------------------------------------------------------------
+
+(progn
+(setq default-tab-width 4)
+(setq-default indent-tabs-mode nil)
+(setq c-default-style "linux")
+(setq c-basic-offset 4)
+)
+
+;在考虑怎么加载:
+(toggle-truncate-lines )
+;
+(define-key evil-normal-state-map "\C-l" '(lambda ()(interactive) (scroll-left 15) (evil-forward-char 15)))
+(define-key evil-normal-state-map "\C-h" '(lambda ()(interactive) (scroll-right 15) (evil-backward-char 15)))
+(define-key evil-normal-state-map "\C-j" '(lambda ()(interactive) (evil-scroll-line-down 10) (next-line 10)))
+(define-key evil-normal-state-map "\C-k" '(lambda ()(interactive) (evil-scroll-line-up 10)(previous-line 10)))
+
+
+;再考虑一下目前的功能和是不是有和tensorboardx重叠的地方:
+;https://www.cnblogs.com/kk17/p/10077335.html
+;[Pytorch]PyTorch使用tensorboardX（转
+
+;https://blog.csdn.net/bigbennyguo/article/details/87956434
+;详解PyTorch项目使用TensorboardX进行训练可视化
+
+(evil-ex-define-cmd "pdf" 
+'(lambda ()
+   (interactive)
+   ;(shell-command-to-string
+   (run-script-in-new-shell
+   ;(message
+     (format "pandoc --pdf-engine=xelatex -V geometry:margin=0.5in -V CJKmainfont=\"KaiTi\" %s  -o /tmp/%s.pdf" (buffer-file-name)   (file-name-nondirectory (file-name-base (buffer-file-name)))))))
+;geometry:margin=1in
+;您也可以指定多个变量值。例如，如果您想创建一个4英寸6英寸的pdf半边距边距，您可以使用：
+;pandoc -V geometry:paperwidth=4in -V geometry:paperheight=6in -V geometry:margin=.5in -o output.pdf input.md
+
+
+
+;------------------------------------------------------------
+(evil-ex-define-cmd "is[erver]" 
+'(lambda ()
+  (interactive)
+  (progn 
+    (setq send-to-ipython-cmd "sh ~/Desktop/dotemacs/curl_with_out_color.sh %s")
+    (run-nujnus-script "/Users/sunjun/Desktop/dotemacs/iserver.nujnus")
+)))
+
+
+(evil-ex-define-cmd "is[erver]-r" 
+'(lambda ()
+  (interactive)
+  (progn 
+    (setq send-to-ipython-cmd "sh ~/Desktop/dotemacs/curl_with_out_color_remote.sh %s")
+    (run-nujnus-script "/Users/sunjun/Desktop/dotemacs/iserver_remote.nujnus")
+)))
+;------------------------------------------------------------
+
+;无限弹窗,要兼容下buffer的关闭? 考虑对pdf的兼容? 所以要用文件?
+;有没有轻量的弹窗方法?
+;貌似没有.
+;还是简单粗暴吧. 用无限临时文件策略. ;关键就是生成临时文件名了. ;timestamp
+
+
+;------------------------------------------------------------
+
+(defun write-new-file-other-window(result)
+  ;在新临时文件的弹窗中展示内容
+  (pop-global-right-and-back 65 (format "/tmp/emacs-new-file%s" (format-time-string "%Y_%m_%d_%H_%M_%S"))
+    (save-excursion  ;要想insert after point 必须要save-excursion, 不然就会insert before
+      (end-of-buffer)
+      (insert "\n---\n")
+      (insert-timestamp)
+      (insert "\n#<output:>\n")
+      (insert 
+        (s-join "\n" 
+          (-map (lambda (str) (concat "" str)) 
+		(split-string result "\n")))))
+      (beginning-of-buffer)
+    ))
+
+;(write-new-file-other-window "test8")  ;例子
+;(list-buffers)
+;------------------------------------------------------------
+;反馈模式的切换机制, 在三种机制中切换:
+
+;默认方式:
+(defun interpret-script(expression)
+  (write-response-other-window (send-to-ipython expression))
+)
+
+(defun response-mode ()
+  (progn
+    (setq mode-line-format
+          (list
+           ;; value of `mode-name'
+           "%m: "
+           ;; value of current buffer name
+           "buffer <%b> "
+           "  反馈模式:"
+           response-mode-description
+           "  切换命令: res"))
+    (force-mode-line-update)
+  )
+)
+
+(add-hook 'markdown-mode-hook
+  '(lambda() (interactive) (response-mode)))
+
+
+(setq response-acc 0)
+(setq response-mode-description "<下一行显示>")
+
+(evil-ex-define-cmd "res" 'switch-response-mode)
+
+(defun switch-response-mode ()
+  (interactive)
+  (if  (= response-acc  0)
+    (progn
+      (setq response-mode-description "<下一行显示>")
+      (response-mode)
+      (setq response-acc 1)
+      (defun interpret-script(expression)
+        (write-response (send-to-ipython expression))
+      ))
+    (if  (= response-acc  1)
+      (progn
+        (setq response-mode-description "<右侧窗口显示>")
+        (response-mode)
+        (setq response-acc 2)
+        (defun interpret-script(expression)
+          (write-response-other-window (send-to-ipython expression)))
+        )
+      (if  (= response-acc  2)
+        (progn
+          (setq response-mode-description "<右侧窗口新文件显示>")
+          (response-mode)
+          (setq response-acc 0)
+          (defun interpret-script(expression)
+             (write-new-file-other-window (send-to-ipython expression))
+          ))))))
